@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using WebApplication1.Models;
 using WebApplication1.Services;
 
@@ -33,7 +34,14 @@ public class SearchController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Send([FromBody] ArticleDocument article)
     {
-        var payload = JsonConvert.SerializeObject(article);
+        var payload = JsonConvert.SerializeObject(article, Formatting.Indented, new JsonSerializerSettings
+        {
+               ContractResolver = new DefaultContractResolver
+               {
+                   NamingStrategy = new CamelCaseNamingStrategy()
+               }
+        });
+        
         await _kafkaProducer.ProduceAsync(
             topic: "demo-topic",
             message: payload
