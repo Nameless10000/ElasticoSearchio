@@ -12,6 +12,20 @@ public class ArticleSearchService
         _client = client;
     }
 
+    public async Task UpsertAsync(ArticleDocument document)
+    {
+        var response = await  _client.IndexAsync(document, i =>
+        {
+            i.Id(document.Id);
+            i.Index("articles");
+        });
+
+        if (!response.IsValidResponse && response.TryGetOriginalException(out var exception))
+        {
+            throw new InvalidOperationException(exception.Message);
+        }
+    }
+
     public async Task IndexAsync(IEnumerable<ArticleDocument> documents)
     {
         // Bulk-индексация - предпочтительный способ записи

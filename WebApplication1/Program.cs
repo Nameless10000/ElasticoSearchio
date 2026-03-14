@@ -1,6 +1,8 @@
+using Confluent.Kafka;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using WebApplication1.Services;
+using WebApplication1.Services.KafkaConsumerService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,27 @@ var settings = new ElasticsearchClientSettings(new Uri("http://localhost:9200"))
 
 builder.Services.AddSingleton(new ElasticsearchClient(settings));
 builder.Services.AddScoped<ArticleSearchService>();
+
+builder.Services.AddSingleton(new ProducerConfig
+{
+    BootstrapServers = "localhost:9094"
+});
+
+builder.Services.AddSingleton<KafkaProducerService>();
+builder.Services.AddSingleton<IConsumer<string, string>>(_ =>
+{
+    var config = new ConsumerConfig
+    {
+        BootstrapServers = "localhost:9094",
+        GroupId = "article-indexer",
+        AutoOffsetReset = AutoOffsetReset.Earliest,
+        EnableAutoCommit = false
+    };
+
+    return new ConsumerBuilder<string, string>(config)
+        .Build();
+});
+builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
 
