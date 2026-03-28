@@ -32,22 +32,11 @@ public class SearchController : ControllerBase
     }
     
     [HttpPost]
-    public async Task<IActionResult> Send([FromBody] ArticleDocument article)
+    public async Task<IActionResult> CreateArticle([FromBody] ArticleDocument article)
     {
-        var payload = JsonConvert.SerializeObject(article, Formatting.Indented, new JsonSerializerSettings
-        {
-               ContractResolver = new DefaultContractResolver
-               {
-                   NamingStrategy = new CamelCaseNamingStrategy()
-               }
-        });
-        
-        await _kafkaProducer.ProduceAsync(
-            topic: "demo-topic",
-            message: payload
-        );
+        await _service.AddArticleAsync(article);
 
-        return Ok("Message sent to Kafka");
+        return Accepted();
     }
 
     [HttpGet]

@@ -1,4 +1,5 @@
 using Elastic.Clients.Elasticsearch;
+using WebApplication1.Database;
 using WebApplication1.Models;
 
 namespace WebApplication1.Services;
@@ -6,24 +7,20 @@ namespace WebApplication1.Services;
 public class ArticleSearchService
 {
     private readonly ElasticsearchClient _client;
+    private readonly DataContext _dataContext;
 
-    public ArticleSearchService(ElasticsearchClient client)
+    public ArticleSearchService(
+        ElasticsearchClient client,
+        DataContext dataContext)
     {
         _client = client;
+        _dataContext = dataContext;
     }
 
-    public async Task UpsertAsync(ArticleDocument document)
+    public async Task AddArticleAsync(ArticleDocument document)
     {
-        var response = await  _client.IndexAsync(document, i =>
-        {
-            i.Id(document.Id);
-            i.Index("articles");
-        });
-
-        if (!response.IsValidResponse && response.TryGetOriginalException(out var exception))
-        {
-            throw new InvalidOperationException(exception.Message);
-        }
+        await _dataContext.Articles.AddAsync(document);
+        await _dataContext.SaveChangesAsync();
     }
 
     public async Task IndexAsync(IEnumerable<ArticleDocument> documents)

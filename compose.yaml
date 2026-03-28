@@ -1,4 +1,29 @@
 ﻿services:
+  mariadb:
+    image: mariadb:11.2
+    container_name: mariadb
+    hostname: mariadb
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: article
+      MARIADB_USER: debezium
+      MARIADB_PASSWORD: dbz
+    command:
+      # Обязательные параметры для Debezium
+      - --server-id=223344
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-row-image=FULL
+      - --binlog-expire-logs-seconds=604800
+      - --binlog-annotate-row-events=ON
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - mariadbnet
+      
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
     container_name: elasticsearch
@@ -72,9 +97,9 @@
       - kafkanet
 
   kafka-connect:
-    image: confluentinc/cp-kafka-connect:7.7.7
+    build: ./WebApplication1/kafka-connect
     container_name: kafka-connect
-    depends_on:
+    depends_on: 
       - kafka
       - elasticsearch
     ports:
@@ -95,21 +120,19 @@
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-    command:
-      - bash
-      - -c
-      - |
-          confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:latest
-          /etc/confluent/docker/run
     networks:
       - kafkanet
       - elastic
+      - mariadbnet
 
 volumes:
-  esdata:
+  esdata:  
+  mariadb-data:
 
 networks:
   kafkanet:
     name: kafkanet
   elastic:
     driver: bridge
+  mariadbnet:
+    name: mariadbnet

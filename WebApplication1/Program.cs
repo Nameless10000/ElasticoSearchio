@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using Confluent.Kafka;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Database;
 using WebApplication1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +26,10 @@ builder.Services.AddSingleton(new ProducerConfig
     BootstrapServers = "localhost:9094"
 });
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseMySql(connectionString, new MariaDbServerVersion("11.2.6")));
+
 builder.Services.AddSingleton<KafkaProducerService>();
 
 var app = builder.Build();
@@ -32,6 +39,21 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+try
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+    if (dataContext.Database.GetPendingMigrations().Any())
+    {
+        await dataContext.Database.MigrateAsync();
+    }
+}
+catch (Exception ex)
+{
+    Debug.WriteLine(ex.Message);
 }
 
 app.UseHttpsRedirection();
