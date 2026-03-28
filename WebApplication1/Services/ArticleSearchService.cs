@@ -40,7 +40,7 @@ public class ArticleSearchService
     public async Task<IReadOnlyCollection<ArticleDocument>> SearchAsync(string query)
     {
         var response = await _client.SearchAsync<ArticleDocument>(s => s
-            .Indices("articles")
+            .Indices("cdc.article.articles")
             .Query(q => q
                 .MultiMatch(m => m
                     .Fields(f => f.Name, f => f.Content)
